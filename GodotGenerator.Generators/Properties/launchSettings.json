@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Debug_SG": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\..\\..\\Throwing\\Throwing\\Throwing.csproj"
+    }
+  }
+}
