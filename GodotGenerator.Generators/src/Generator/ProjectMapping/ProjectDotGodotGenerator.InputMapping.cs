@@ -1,14 +1,14 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace Generator.Generator;
+namespace Generator.Generators;
 
-public partial class ProjectDotGodotGenerator
+partial class ProjectDotGodotGenerator
 {
     private static void InputMapping(ref SourceProductionContext context, ref int i, string[] content)
     {
         var sb = new StringBuilderSG();
 
-        var closeNS = sb.CreateNamespace(GODOT_NAMESPACE);
+        var closeNS = sb.CreateNamespace(GodotUtil.GD_NAMESPACE);
 
         var className = nameof(InputMapping);
 

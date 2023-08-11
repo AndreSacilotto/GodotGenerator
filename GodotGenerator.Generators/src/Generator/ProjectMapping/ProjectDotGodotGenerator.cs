@@ -1,13 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace Generator.Generator;
+namespace Generator.Generators;
 
 [Generator]
-public partial class ProjectDotGodotGenerator : IIncrementalGenerator
+internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
 {
     //config version = 5
     public const string GODOT_PROJECT_FILE = "project.godot";
-    private const string GODOT_NAMESPACE = "Godot";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

@@ -1,6 +1,8 @@
-﻿namespace Generator;
+﻿using System.Text.RegularExpressions;
 
-public static class UtilString
+namespace Generator;
+
+internal static class UtilString
 {
     public static string ReplaceLastOccurrence(string source, string find, string replace)
     {
@@ -10,4 +12,20 @@ public static class UtilString
         return source.Remove(place, find.Length).Insert(place, replace);
     }
 
+    public static string FirstCharToLowerCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+        return char.ToLower(input[0]) + input.Substring(1);
+    }
+
+
+    public static string RemoveNamespace(string typeFullName) => Regex.Replace(typeFullName, "[.\\w]+\\.(\\w+)", "$1");
+    public static string TypeSimpleName(string typeName)
+    {
+        var splits = typeName.Split('.');
+        var last = splits[splits.Length - 1];
+
+        return last;
+    }
 }

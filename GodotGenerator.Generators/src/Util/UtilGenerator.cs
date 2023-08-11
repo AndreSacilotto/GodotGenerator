@@ -1,9 +1,10 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generator;
 
-public static class UtilGenerator
+internal static class UtilGenerator
 {
     public static readonly string[] NewLines = new string[3] { "\r\n", "\r", "\n" };
 
@@ -28,6 +29,8 @@ public static class UtilGenerator
         _ => GetNamespaceFrom(syntax.Parent)
     };
 
+
+
     #region Project Path
     private const string BUILD_PROJECT_DIR = "build_property.projectdir";
     public static string GetCallingPath(ref GeneratorExecutionContext context)
@@ -44,6 +47,9 @@ public static class UtilGenerator
     #endregion
 
     #region Extensions - To String
+
+    public static string GetTypeFullName(this ITypeSymbol typeSymbol) => typeSymbol.SpecialType == SpecialType.None ?
+        typeSymbol.ToDisplayString() : typeSymbol.SpecialType.ToString().Replace("_", ".");
 
     public static string ToFullyQualifiedName(this TypeSyntax typeSyntax, SemanticModel model)
     {
@@ -68,8 +74,8 @@ public static class UtilGenerator
     public static readonly SymbolDisplayFormat GlobalTypeNullableFormat = new(
         globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-        genericsOptions: 
-            SymbolDisplayGenericsOptions.IncludeTypeParameters | 
+        genericsOptions:
+            SymbolDisplayGenericsOptions.IncludeTypeParameters |
             SymbolDisplayGenericsOptions.IncludeVariance,
         memberOptions:
             SymbolDisplayMemberOptions.IncludeParameters |
@@ -92,7 +98,6 @@ public static class UtilGenerator
     #endregion
 
     public static string ToGlobalName(this ISymbol symbol) => symbol.ToDisplayString(GlobalTypeNullableFormat);
-
 
     #endregion
 
@@ -137,6 +142,7 @@ public static class UtilGenerator
                 return attributeData.ConstructorArguments[i].Value;
         return null;
     }
+
 
     #endregion
 

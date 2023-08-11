@@ -3,13 +3,13 @@
 namespace Generator.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-public class ScriptSceneAttribute : Attribute
+public sealed class ScriptSceneAttribute : Attribute
 {
-    internal readonly bool chachePackedScene;
-    internal readonly string resPath;
-    public ScriptSceneAttribute(bool chachePackedScene = false, string resPath = "")
+    public readonly bool chachePackedScene;
+    public readonly string resourcePath;
+    public ScriptSceneAttribute(bool chachePackedScene = false, string resourcePath = "")
     {
         this.chachePackedScene = chachePackedScene;
-        this.resPath = resPath;
+        this.resourcePath = resourcePath;
     }
 }

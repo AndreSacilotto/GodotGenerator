@@ -4,7 +4,7 @@
 
 namespace Generator;
 
-public class OutputWriter
+internal class OutputWriter
 {
     public static string GetAssemblyLocation() => Assembly.GetExecutingAssembly().Location;
 

@@ -4,10 +4,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace Generator.Generator;
+using Generator.Attributes;
+
+namespace Generator.Generators;
 
 [Generator]
-public class MakeInterfaceGenerator : IIncrementalGenerator
+internal class MakeInterfaceGenerator : IIncrementalGenerator
 {
     private record class SemanticProvider(ClassDeclarationSyntax Syntax, INamedTypeSymbol Symbol);
     private record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Classes);
@@ -50,7 +52,7 @@ public class MakeInterfaceGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, CustomProvider provider)
     {
-        var markerAttrSymbol = provider.Compilation.GetSymbolByName("Generator.Attributes.MakeInterfaceAttribute");
+        var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(MakeInterfaceAttribute).FullName);//"Generator.Attributes.MakeInterfaceAttribute");
 
         // Get only the classes with the attribute code
         var valid = new HashSet<ValidItem>();
@@ -82,15 +84,18 @@ public class MakeInterfaceGenerator : IIncrementalGenerator
             for (int i = 0; i < parameters.Length; i++)
             {
                 var param = parameters[i];
-                var value = attr.ConstructorArguments[i].Value!;
+                var value = attr.ConstructorArguments[i].Value as bool?;
+
+                if (value == null)
+                    continue;
 
                 switch (param.Name)
                 {
-                    case nameof(useProps): useProps = (bool)value; break;
-                    case nameof(useMethods): useMethods = (bool)value; break;
-                    case nameof(useEvents): useEvents = (bool)value; break;
-                    case nameof(inheritInterfaces): inheritInterfaces = (bool)value; break;
-                    case nameof(inheritGeneratedInterfaces): inheritGeneratedInterfaces = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.useProps): useProps = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.useMethods): useMethods = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.useEvents): useEvents = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.inheritInterfaces): inheritInterfaces = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.inheritGeneratedInterfaces): inheritGeneratedInterfaces = (bool)value; break;
                 }
             }
 

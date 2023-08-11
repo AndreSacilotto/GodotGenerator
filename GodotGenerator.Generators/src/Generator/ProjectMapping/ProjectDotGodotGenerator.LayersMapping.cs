@@ -1,8 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace Generator.Generator;
+namespace Generator.Generators;
 
-public partial class ProjectDotGodotGenerator
+partial class ProjectDotGodotGenerator
 {
     private record LayerValue(string LayerMask, string Name);
 
@@ -10,7 +10,7 @@ public partial class ProjectDotGodotGenerator
     {
         var sb = new StringBuilderSG();
 
-        var closeNS = sb.CreateNamespace(GODOT_NAMESPACE);
+        var closeNS = sb.CreateNamespace(GodotUtil.GD_NAMESPACE);
 
         var className = nameof(LayersMapping);
 

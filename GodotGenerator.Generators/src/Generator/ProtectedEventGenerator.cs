@@ -3,10 +3,10 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 
-namespace Generator.Generator;
+namespace Generator.Generators;
 
 [Generator]
-public class ProtectedEventGenerator : IIncrementalGenerator
+internal class ProtectedEventGenerator : IIncrementalGenerator
 {
     private record class SemanticProvider(FieldDeclarationSyntax Syntax, IFieldSymbol Symbol);
     private record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Fields);
@@ -46,7 +46,7 @@ public class ProtectedEventGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, CustomProvider provider)
     {
-        var markerAttrSymbol = provider.Compilation.GetSymbolByName("Generator.Attributes.ProtectedEventAttribute");
+        var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(Attributes.ProtectedEventAttribute).FullName);//"Generator.Attributes.ProtectedEventAttribute");
 
         var sb = new StringBuilderSG();
         foreach (var fieldItem in provider.Fields)
@@ -89,7 +89,7 @@ public class ProtectedEventGenerator : IIncrementalGenerator
                 arg_eventName = name[0].ToString().ToUpper() + name.Substring(1);
             }
 
-            sb.AddUsing("Godot");
+            sb.AddUsing(GodotUtil.GD_NAMESPACE);
             sb.AppendLine();
 
             sb.AddNullable(true);
