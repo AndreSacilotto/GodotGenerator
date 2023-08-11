@@ -12,7 +12,7 @@ internal static class UtilError
 
     public static void NewDiagnostic(this ref SourceProductionContext context, Location location, int id, string message, DiagnosticSeverity severity = DiagnosticSeverity.Warning)
     {
-        var description = new DiagnosticDescriptor("SG" + id, "Inspection", message, "SG.Parsing", severity, true);
+        var description = new DiagnosticDescriptor("SG" + id.ToString("0000"), "Inspection", message, "SG.Parsing", severity, true);
         var diagnostic = Diagnostic.Create(description, location);
         context.ReportDiagnostic(diagnostic);
     }

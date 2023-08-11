@@ -1,10 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Generator.Attributes;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Text;
-
-using Generator.Attributes;
 
 namespace Generator.Generators;
 
