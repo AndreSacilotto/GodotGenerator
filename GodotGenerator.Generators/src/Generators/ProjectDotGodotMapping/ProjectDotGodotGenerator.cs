@@ -25,7 +25,7 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, string provider)
     {
-        var content = provider.Split(UtilGenerator.NewLines, StringSplitOptions.RemoveEmptyEntries);
+        var content = provider.Split(GeneratorUtil.NewLines, StringSplitOptions.RemoveEmptyEntries);
         if (content == null || content.Length == 0)
             return;
 

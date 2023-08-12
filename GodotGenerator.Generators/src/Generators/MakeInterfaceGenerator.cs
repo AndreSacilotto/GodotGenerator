@@ -61,7 +61,7 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
             {
                 if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, markerAttrSymbol) || attr.AttributeConstructor == null)
                     continue;
-                var interfaceName = UtilString.ReplaceLastOccurrence(classItem.Symbol.ToGlobalName(), ".", ".I");
+                var interfaceName = StringUtil.ReplaceLastOccurrence(classItem.Symbol.ToGlobalName(), ".", ".I");
                 valid.Add(new(classItem, attr, interfaceName));
             }
         }

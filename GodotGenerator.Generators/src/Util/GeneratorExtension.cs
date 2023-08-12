@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generator;
 
-internal static class UtilGenerator
+internal static class GeneratorExtension
 {
     public static readonly string[] NewLines = new string[3] { "\r\n", "\r", "\n" };
 
@@ -21,32 +21,34 @@ internal static class UtilGenerator
 
     #endregion
 
-    //BaseNamespaceDeclarationSyntax on .Net6 (because you can use higher lib version)
-    public static string GetNamespaceFrom(SyntaxNode syntax) => syntax.Parent switch
+    public static bool IsOfBaseType(this ITypeSymbol type, ITypeSymbol baseType)
     {
-        NamespaceDeclarationSyntax namespaceDeclarationSyntax => namespaceDeclarationSyntax.Name.ToString(),
-        null => string.Empty, // or whatever you want to do
-        _ => GetNamespaceFrom(syntax.Parent)
-    };
+        if (type is ITypeParameterSymbol p)
+            return p.ConstraintTypes.Any(ct => ct.IsOfBaseType(baseType));
 
+        var t = type.BaseType;
+        while (t != null)
+        {
+            if (SymbolEqualityComparer.Default.Equals(t, baseType))
+                return true;
+            t = t.BaseType;
+        }
 
-
-    #region Project Path
-    private const string BUILD_PROJECT_DIR = "build_property.projectdir";
-    public static string GetCallingPath(ref GeneratorExecutionContext context)
-    {
-        if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue(BUILD_PROJECT_DIR, out var result) && result != null && !string.IsNullOrWhiteSpace(result))
-            return result;
-        return string.Empty;
+        return false;
     }
-    public static IncrementalValueProvider<string> GetCallingPath(ref IncrementalGeneratorInitializationContext context) => context.AnalyzerConfigOptionsProvider.Select((x, cancelTK) =>
-    {
-        x.GlobalOptions.TryGetValue(BUILD_PROJECT_DIR, out var result);
-        return result ?? string.Empty;
-    });
-    #endregion
 
-    #region Extensions - To String
+    #region ToString
+
+    public static string AccessibilityToString(this Accessibility accessibility) => accessibility switch
+    {
+        Accessibility.Private => "private",
+        Accessibility.Public => "public",
+        Accessibility.Protected => "protected",
+        Accessibility.Internal => "internal",
+        Accessibility.ProtectedAndInternal => "protected internal",
+        Accessibility.ProtectedOrInternal => "internal",
+        _ => throw new Exception($"There isnt a {accessibility}"),
+    };
 
     public static string GetTypeFullName(this ITypeSymbol typeSymbol) => typeSymbol.SpecialType == SpecialType.None ?
         typeSymbol.ToDisplayString() : typeSymbol.SpecialType.ToString().Replace("_", ".");
@@ -70,7 +72,6 @@ internal static class UtilGenerator
         return typeName;
     }
 
-    #region Format
     public static readonly SymbolDisplayFormat GlobalTypeNullableFormat = new(
         globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
@@ -95,54 +96,8 @@ internal static class UtilGenerator
             SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier
     );
-    #endregion
 
     public static string ToGlobalName(this ISymbol symbol) => symbol.ToDisplayString(GlobalTypeNullableFormat);
-
-    #endregion
-
-    #region Extesion - Util
-
-    public static bool IsOfBaseType(this ITypeSymbol type, ITypeSymbol baseType)
-    {
-        if (type is ITypeParameterSymbol p)
-            return p.ConstraintTypes.Any(ct => ct.IsOfBaseType(baseType));
-
-        var t = type.BaseType;
-        while (t != null)
-        {
-            if (SymbolEqualityComparer.Default.Equals(t, baseType))
-                return true;
-            t = t.BaseType;
-        }
-
-        return false;
-    }
-
-    public static string AccessibilityToString(this Accessibility accessibility) => accessibility switch
-    {
-        Accessibility.Private => "private",
-        Accessibility.Public => "public",
-        Accessibility.Protected => "protected",
-        Accessibility.Internal => "internal",
-        Accessibility.ProtectedAndInternal => "protected internal",
-        Accessibility.ProtectedOrInternal => "internal",
-        _ => throw new Exception($"There isnt a {accessibility}"),
-    };
-
-    public static object? GetAttributeValueByName(this AttributeData attributeData, string argName)
-    {
-        if (attributeData.AttributeConstructor == null)
-            return null;
-
-        var parameters = attributeData.AttributeConstructor.Parameters;
-
-        for (int i = 0; i < parameters.Length; i++)
-            if (parameters[i].Name == argName)
-                return attributeData.ConstructorArguments[i].Value;
-        return null;
-    }
-
 
     #endregion
 

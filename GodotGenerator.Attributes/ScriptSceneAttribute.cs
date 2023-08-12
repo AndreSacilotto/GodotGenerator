@@ -6,10 +6,11 @@ namespace Generator.Attributes;
 public sealed class ScriptSceneAttribute : Attribute
 {
     public readonly bool chachePackedScene;
-    public readonly string resourcePath;
-    public ScriptSceneAttribute(bool chachePackedScene = false, string resourcePath = "")
+    public readonly string scenePath;
+    //public readonly bool createEmptyConstructor;
+    public ScriptSceneAttribute(bool chachePackedScene = false, string scenePath = "")
     {
         this.chachePackedScene = chachePackedScene;
-        this.resourcePath = resourcePath;
+        this.scenePath = scenePath;
     }
 }

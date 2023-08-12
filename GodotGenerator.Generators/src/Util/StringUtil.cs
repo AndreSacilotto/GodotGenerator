@@ -2,7 +2,7 @@
 
 namespace Generator;
 
-internal static class UtilString
+internal static class StringUtil
 {
     public static string ReplaceLastOccurrence(string source, string find, string replace)
     {

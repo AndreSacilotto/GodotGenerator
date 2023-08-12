@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 namespace Generator.Generators;
 
 [Generator]
-internal partial class GodotNodeResourceClassGenerator : IIncrementalGenerator
+internal partial class GodotNodeResourcePathGenerator : IIncrementalGenerator
 {
     public record class SemanticProvider(ClassDeclarationSyntax Syntax, INamedTypeSymbol Symbol);
     public record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Classes, string TargetPath);
@@ -15,7 +15,7 @@ internal partial class GodotNodeResourceClassGenerator : IIncrementalGenerator
     {
         var classes = context.SyntaxProvider.CreateSyntaxProvider(SyntacticPredicate, SemanticTransform);
 
-        var projectPath = UtilGenerator.GetCallingPath(ref context);
+        var projectPath = GeneratorUtil.GetCallingPath(ref context);
 
         var provider = context.CompilationProvider.Combine(classes.Collect()).Combine(projectPath).Select(
             (x, _) => new CustomProvider(x.Left.Left, x.Left.Right, x.Right)
@@ -24,7 +24,6 @@ internal partial class GodotNodeResourceClassGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(provider, ScriptSceneGenerator);
         context.RegisterSourceOutput(provider, ShaderNodeGenerator);
     }
-
 
     private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
     {
