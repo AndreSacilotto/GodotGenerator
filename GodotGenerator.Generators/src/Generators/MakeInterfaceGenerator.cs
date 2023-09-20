@@ -99,7 +99,7 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
             }
 
             // Get Class Informations
-            var ns = classSymbol.ContainingNamespace.Name;
+            var ns = classSymbol.ContainingNamespace.ToString();
             var className = classSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
             var acessibility = classSymbol.DeclaredAccessibility.AccessibilityToString();
 

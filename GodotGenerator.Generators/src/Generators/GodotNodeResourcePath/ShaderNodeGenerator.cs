@@ -53,13 +53,13 @@ internal partial class GodotNodeResourcePathGenerator
             //check if class is valid node
             if (!classSymbol.IsOfBaseType(nodeSymbol))
             {
-                context.NewDiagnostic(classSyntax.GetLocation(), 1, $"The class dont cant have a shader material");
+                context.NewDiagnostic(classSyntax.GetLocation(), 1, $"The class is not a node");
                 continue;
             }
 
             var className = classSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
-            var ns = classSymbol.ContainingNamespace.Name;
+            var ns = classSymbol.ContainingNamespace.ToString();
             if (!string.IsNullOrWhiteSpace(ns))
                 sb.AddNamespaceFileScoped(ns);
 

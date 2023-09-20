@@ -75,7 +75,7 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
             if (!hasAttr)
                 continue;
 
-            var ns = fieldSymbol.ContainingNamespace.Name;
+            var ns = fieldSymbol.ContainingNamespace.ToString();
             var className = fieldSymbol.ContainingType.Name;
             var classPartialName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
