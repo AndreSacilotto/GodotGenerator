@@ -6,7 +6,6 @@ namespace Generator.Generators;
 internal partial class GodotNodeResourcePathGenerator
 {
 
-
     public static void ShaderNodeGenerator(SourceProductionContext context, CustomProvider provider)
     {
         const string GD_LOADER = GodotUtil.GD_G_NAMESPACE + ".ResourceLoader";
@@ -66,8 +65,7 @@ internal partial class GodotNodeResourcePathGenerator
             var closeClass = sb.CreateBracketDeclaration($"partial class {className}");
 
             //FilePath
-            const string Shader_EXT = ".gdshader";
-            const string VisualShader_EXT = ".tres";
+            const string VisualShader_EXT = GodotUtil.RESOURCE_EXT;
 
             const string Shader_TYPE = GodotUtil.GD_G_NAMESPACE + ".Shader";
             const string VisualShader_TYPE = GodotUtil.GD_G_NAMESPACE + ".VisualShader";
@@ -85,7 +83,7 @@ internal partial class GodotNodeResourcePathGenerator
                 }
                 else 
                 { 
-                    filePath = Path.ChangeExtension(filePath, Shader_EXT);
+                    filePath = Path.ChangeExtension(filePath, GodotUtil.SHADER_EXT);
                     scriptType = Shader_TYPE;
                 }
             }
@@ -94,7 +92,7 @@ internal partial class GodotNodeResourcePathGenerator
                 filePath = arg_shaderScriptPath;
                 switch (Path.GetExtension(filePath))
                 {
-                    case Shader_EXT: scriptType = Shader_TYPE; break;
+                    case GodotUtil.SHADER_EXT: scriptType = Shader_TYPE; break;
                     case VisualShader_EXT: scriptType = VisualShader_TYPE; break;
                     default: context.NewDiagnostic(classSyntax.GetLocation(), 2, $"Invalid shader script extension"); continue;
                 }

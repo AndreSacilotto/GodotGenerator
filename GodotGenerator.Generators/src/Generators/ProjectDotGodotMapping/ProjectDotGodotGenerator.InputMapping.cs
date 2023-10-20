@@ -4,26 +4,20 @@ namespace Generator.Generators;
 
 partial class ProjectDotGodotGenerator
 {
-    private static void InputMapping(ref SourceProductionContext context, ref int i, string[] content)
+    private static void InputMapping(ref SourceProductionContext context, ReadOnlySpan<string> content)
     {
         var sb = new StringBuilderSG();
 
-        var closeNS = sb.CreateNamespace(GodotUtil.GD_NAMESPACE);
+        sb.AddNamespaceFileScoped(GodotUtil.GD_NAMESPACE);
 
         var className = nameof(InputMapping);
 
         var closeClass = sb.CreateBracketDeclaration($"public static class {className}");
 
         // Custom Inputs
-        for (i++; i < content.Length; i++)
+        for (int i = 0; i < content.Length; i++)
         {
             var line = content[i].AsSpan();
-
-            if (IsSection(line))
-            {
-                i--;
-                break;
-            }
 
             var stop = line.IndexOf('=');
             if (stop == -1)
@@ -35,19 +29,24 @@ partial class ProjectDotGodotGenerator
 
             var inputName = line.Slice(0, stop).ToString();
 
-            sb.AppendLineC($"public const string {inputName.ToUpperInvariant()} = \"{inputName}\"");
+            sb.AppendLineC(StringNameConst(inputName, inputName));
         }
 
         // Default Inputs
         sb.AppendLine("#region Default Inputs");
         foreach (var input in defaultInputs)
-            sb.AppendLineC($"public const string {input.Replace('.', '_').ToUpperInvariant()} = \"{input}\"");
+            sb.AppendLineC(StringNameConst(input.ToUpperInvariant(), input));
         sb.AppendLine("#endregion Default Inputs");
 
         closeClass();
-        closeNS();
 
         context.AddSource($"{className}.g.cs", sb.ToString());
+
+        static string StringNameConst(string varName, string value)
+        {
+            const string StringNameType = GodotUtil.GD_G_NAMESPACE + ".StringName";
+            return $"public static {StringNameType} {varName} {{ get; }} = new(\"{value}\")";
+        }
     }
 
     /// <summary>

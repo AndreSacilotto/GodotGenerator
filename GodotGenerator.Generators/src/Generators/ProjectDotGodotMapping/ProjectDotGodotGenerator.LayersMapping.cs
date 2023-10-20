@@ -4,71 +4,76 @@ namespace Generator.Generators;
 
 partial class ProjectDotGodotGenerator
 {
-    private record LayerValue(string LayerMask, string Name);
+    private record struct LayerValue(string LayerName, string[] LayersName);
 
-    private static void LayersMapping(ref SourceProductionContext context, ref int i, string[] content)
+    private static void LayersMapping(ref SourceProductionContext context, ReadOnlySpan<string> content)
     {
         var sb = new StringBuilderSG();
 
-        var closeNS = sb.CreateNamespace(GodotUtil.GD_NAMESPACE);
-
         var className = nameof(LayersMapping);
 
-        //var closeClass = sb.CreateBracketDeclaration($"public static class {className}");
+        sb.AddNamespaceFileScoped(GodotUtil.GD_NAMESPACE);
 
-        var dict = new Dictionary<string, List<LayerValue>>(6);
+        var closeClass = sb.CreateBracketDeclaration($"public static class {className}");
 
-        for (i++; i < content.Length; i++)
+        var layersDict = new Dictionary<string, LayerValue>
+        {
+            ["2d_render"] = new("Render2D", new string[20]),
+            ["2d_physics"] = new("Physics2D", new string[32]),
+            ["2d_navigation"] = new("Navigation2D", new string[32]),
+
+            ["3d_render"] = new("Render3D", new string[20]),
+            ["3d_physics"] = new("Physics3D", new string[32]),
+            ["3d_navigation"] = new("Navigation3D", new string[32]),
+
+            ["avoidance"] = new("Avoidance", new string[32]),
+        };
+
+        for (int i = 0; i < content.Length; i++)
         {
             var line = content[i].AsSpan();
 
-            if (IsSection(line))
-            {
-                i--;
-                break;
-            }
+            // Parsing ( 2d_render/layer_1="Water" )
+            int start = 0;
 
-            // Parse Layers
-            var i1 = line.IndexOf('/') + 1;
-            var i2 = line.IndexOf('=') + 2;
+            // '2d_render'
+            var i1 = line.IndexOf('/');
+            var layerString = line.Slice(start, i1).ToString();
 
-            var s1 = line.Slice(0, i1 - 1).ToString();
-            var s2 = line.Slice(i1, i2 - i1 - 2);
-            var s3 = line.Slice(i2, line.Length - i2 - 1).ToString();
+            if (!layersDict.TryGetValue(layerString, out var arr))
+                continue; // TODO: ERROR
 
-            if (!dict.TryGetValue(s1, out var list))
-                dict.Add(s1, list = new List<LayerValue>(8));
+            // 'Water'
+            var i2 = line.IndexOf('=');
+            start = i2 + 2;
+            var nameString = line.Slice(start, line.Length - start - 1).ToString();
 
-            // Create Flag/Mask
-            var under = s2.IndexOf('_') + 1;
-            var lastMask = s2.Slice(under, s2.Length - under).ToString();
-            list.Add(new LayerValue(lastMask, s3));
+            // 'layer_1' => -'layer_'(6) => '1'
+            start = i1 + 1 + 6;
+            var numberString = line.Slice(start, i2 - start).ToString();
+
+            arr.LayersName[int.Parse(numberString)-1] = nameString;
         }
 
-        foreach (var name in dict)
+        foreach (var layer in layersDict.Values)
         {
-            var key = name.Key.AsSpan();
-            var idx = key.IndexOf('_') + 1;
-
-            var layer = key.Slice(idx, key.Length - idx).ToArray();
-            layer[0] = char.ToUpperInvariant(layer[0]);
-
-            var dimension = key.Slice(0, idx - 1);
-
-            var enumName = new string(layer) + "Layer" + dimension.ToString().ToUpperInvariant();
-
             sb.AddAttribute("System.Flags");
-            var closeEnum = sb.CreateBracketDeclaration($"public enum {enumName} : uint");
+            var closeEnum = sb.CreateBracketDeclaration($"public enum {layer.LayerName}");
             sb.AppendLine($"None = 0,");
 
-            foreach (var item in name.Value)
-                sb.AppendLine($"{item.Name} = 1 << {item.LayerMask},");
+            var arr = layer.LayersName;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var item = arr[i];
+                if (string.IsNullOrEmpty(item))
+                    item = "Layer" + (i+1);
+                sb.AppendLine($"{item} = 1 << {i},");
+            }
 
             closeEnum();
         }
 
-        //closeClass();
-        closeNS();
+        closeClass();
 
         context.AddSource($"{className}.g.cs", sb.ToString());
     }

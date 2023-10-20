@@ -21,33 +21,57 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(projectFiles, Execute);
     }
 
-    private static bool IsSection(ReadOnlySpan<char> line) => line[0] == '[' && line[line.Length - 1] == ']';
 
     private static void Execute(SourceProductionContext context, string provider)
     {
-        var content = provider.Split(GeneratorUtil.NewLines, StringSplitOptions.RemoveEmptyEntries);
-        if (content == null || content.Length == 0)
+        var fileContent = provider.Split(GeneratorUtil.NewLines, StringSplitOptions.RemoveEmptyEntries).AsSpan();
+        if (fileContent == null || fileContent.Length == 0)
             return;
 
         var input = "input".AsSpan();
         var layer_names = "layer_names".AsSpan();
 
-        for (int i = 0; i < content.Length; i++)
-        {
-            var line = content[i].AsSpan();
+        var customInput = ReadOnlySpan<string>.Empty;
+        var customLayer = ReadOnlySpan<string>.Empty;
 
+        for (int i = 0; i < fileContent.Length; i++)
+        {
+            var line = fileContent[i].AsSpan();
             if (IsSection(line))
             {
                 var section = line.Slice(1, line.Length - 2);
-                if (section.Equals(input, StringComparison.Ordinal))
+                if (section.SequenceEqual(input))
                 {
-                    InputMapping(ref context, ref i, content);
+                    var length = LoopUntilEndOfSection(ref fileContent, i);
+                    customInput = fileContent.Slice(i + 1, length);
+                    i += length;
                 }
-                else if (section.Equals(layer_names, StringComparison.Ordinal))
+                else if (section.SequenceEqual(layer_names))
                 {
-                    LayersMapping(ref context, ref i, content);
+                    var length = LoopUntilEndOfSection(ref fileContent, i);
+                    customLayer = fileContent.Slice(i + 1, length);
+                    i += length;
                 }
+
             }
+        }
+
+        InputMapping(ref context, customInput);
+
+        LayersMapping(ref context, customLayer);
+
+        static bool IsSection(ReadOnlySpan<char> line) => line[0] == '[' && line[line.Length - 1] == ']';
+
+        static int LoopUntilEndOfSection(ref Span<string> content, int i)
+        {
+            int length = 0;
+            for (i++; i < content.Length; i++)
+            {
+                if (IsSection(content[i].AsSpan()))
+                    break;
+                length++;
+            }
+            return length;
         }
 
     }

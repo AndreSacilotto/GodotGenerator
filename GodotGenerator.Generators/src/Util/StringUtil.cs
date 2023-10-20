@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace Generator;
+﻿namespace Generator;
 
 internal static class StringUtil
 {
@@ -16,16 +14,28 @@ internal static class StringUtil
     {
         if (string.IsNullOrEmpty(input))
             return input;
-        return char.ToLower(input[0]) + input.Substring(1);
+        return char.ToLowerInvariant(input[0]) + input.Substring(1);
+    }
+
+    public static string FirstCharToUpperCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+        return char.ToUpperInvariant(input[0]) + input.Substring(1);
     }
 
 
-    public static string RemoveNamespace(string typeFullName) => Regex.Replace(typeFullName, "[.\\w]+\\.(\\w+)", "$1");
     public static string TypeSimpleName(string typeName)
     {
         var splits = typeName.Split('.');
         var last = splits[splits.Length - 1];
-
         return last;
     }
+
+    public static string SnakeToPascal(string snake) 
+    {
+        var strings = snake.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries).Select(FirstCharToUpperCase);
+        return string.Join(string.Empty, strings);
+    }
+
 }

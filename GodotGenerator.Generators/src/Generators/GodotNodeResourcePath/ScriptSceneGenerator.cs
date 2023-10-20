@@ -11,7 +11,7 @@ partial class GodotNodeResourcePathGenerator
 
         var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(Attributes.ScriptSceneAttribute).FullName);//"Generator.Attributes.ScriptSceneAttribute");
         var nodeSymbol = provider.Compilation.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Node");
-        //var resourceSymbol = provider.Compilation.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Resource");
+        var resourceSymbol = provider.Compilation.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Resource");
 
         var sb = new StringBuilderSG();
         foreach (var classItem in provider.Classes)
@@ -33,9 +33,12 @@ partial class GodotNodeResourcePathGenerator
                     arg_scenePath = stringValue;
             }
 
-            if (!classSymbol.IsOfBaseType(nodeSymbol))
+            bool isNode = classSymbol.IsOfBaseType(nodeSymbol);
+            bool isResource = classSymbol.IsOfBaseType(resourceSymbol);
+
+            if (!isNode && !isResource)
             {
-                context.NewDiagnostic(classSyntax.GetLocation(), 1, $"The class is not a node");
+                context.NewDiagnostic(classSyntax.GetLocation(), 1, $"The class is not a node or resource");
                 continue;
             }
 
@@ -47,28 +50,37 @@ partial class GodotNodeResourcePathGenerator
 
             var closeClass = sb.CreateBracketDeclaration($"partial class {className}");
 
-            string filePath;
-            if (string.IsNullOrWhiteSpace(arg_scenePath))
+            string filePath = arg_scenePath;
+            if (string.IsNullOrWhiteSpace(filePath))
             {
                 filePath = GodotUtil.PathToGodotPath(provider.TargetPath, classSyntax.SyntaxTree.FilePath);
-                filePath = Path.ChangeExtension(filePath, ".tscn");
-            }
-            else
-                filePath = arg_scenePath;
 
-            if (arg_chachePackedScene)
-            {
-                const string VAR_NAME = "Scene";
-                sb.AppendLineC($"public static {GD_PACKED} {VAR_NAME} {{ get; }} = {GD_LOADER}.Load<{GD_PACKED}>(\"{filePath}\")");
-                sb.AppendLineC($"public static {className} Instantiate() => {VAR_NAME}.Instantiate<{className}>()");
-            }
-            else
-            {
-                sb.AppendLineC($"public static {className} Instantiate() => {GD_LOADER}.Load<{GD_PACKED}>(\"{filePath}\").Instantiate<{className}>()");
+                if (isNode)
+                    filePath = Path.ChangeExtension(filePath, GodotUtil.SCENE_EXT);
+                else if (isResource)
+                    filePath = Path.ChangeExtension(filePath, GodotUtil.RESOURCE_EXT);
             }
 
-            //sb.AppendLine();
-            //sb.AppendLine($"private {className}() {{ }}");
+            if (isNode)
+            {
+                if (arg_chachePackedScene)
+                {
+                    const string VAR_NAME = "Scene";
+                    sb.AppendLineC($"public static {GD_PACKED} {VAR_NAME} {{ get; }} = {GD_LOADER}.Load<{GD_PACKED}>(\"{filePath}\")");
+                    sb.AppendLineC($"public static {className} Instantiate() => {VAR_NAME}.Instantiate<{className}>()");
+                }
+                else
+                {
+                    sb.AppendLineC($"public static {className} Instantiate() => {GD_LOADER}.Load<{GD_PACKED}>(\"{filePath}\").Instantiate<{className}>()");
+                }
+            }
+            else if (isResource)
+            {
+                if (arg_chachePackedScene)
+                    sb.AppendLineC($"public static {className} Resource {{ get; }} = {GD_LOADER}.Load<{className}>(\"{filePath}\")");
+                else
+                    sb.AppendLineC($"public static {className} GetResource() => {GD_LOADER}.Load<{className}>(\"{filePath}\")");
+            }
 
             closeClass();
 
