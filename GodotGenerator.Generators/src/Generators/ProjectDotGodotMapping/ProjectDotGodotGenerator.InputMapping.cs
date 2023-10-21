@@ -33,9 +33,14 @@ partial class ProjectDotGodotGenerator
         }
 
         // Default Inputs
+        sb.AppendLine();
         sb.AppendLine("#region Default Inputs");
-        foreach (var input in defaultInputs)
-            sb.AppendLineC(StringNameConst(input.ToUpperInvariant(), input));
+        foreach (var input in defaultInputs) 
+        {
+            //var varName = StringUtil.SnakeToPascal(input.Replace('.', '_'));
+            var varName = input.Replace('.', '_').ToUpperInvariant();
+            sb.AppendLineC(StringNameConst(varName, input));
+        }
         sb.AppendLine("#endregion Default Inputs");
 
         closeClass();
@@ -45,7 +50,7 @@ partial class ProjectDotGodotGenerator
         static string StringNameConst(string varName, string value)
         {
             const string StringNameType = GodotUtil.GD_G_NAMESPACE + ".StringName";
-            return $"public static {StringNameType} {varName} {{ get; }} = new(\"{value}\")";
+            return $"public static readonly {StringNameType} {varName} = \"{value}\"";
         }
     }
 

@@ -64,6 +64,11 @@ internal class StringBuilderSG
         DecreaseIdentation();
         AppendLine('}');
     }
+    public void CloseBracketC()
+    {
+        DecreaseIdentation();
+        AppendLine("};");
+    }
 
     public void AddUsing(string usignNS) => AppendLineC("using " + usignNS);
     public void AddNullable(bool nullable) => AppendLine("#nullable " + (nullable ? "enable" : "disable"));

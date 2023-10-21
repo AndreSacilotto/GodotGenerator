@@ -64,14 +64,30 @@ partial class ProjectDotGodotGenerator
             var arr = layer.LayersName;
             for (int i = 0; i < arr.Length; i++)
             {
-                var item = arr[i];
-                if (string.IsNullOrEmpty(item))
-                    item = "Layer" + (i+1);
-                sb.AppendLine($"{item} = 1 << {i},");
+                if (string.IsNullOrEmpty(arr[i]))
+                    arr[i] = "Layer" + (i+1);
+                sb.AppendLine($"{arr[i]} = 1 << {i},");
             }
-
             closeEnum();
+
+            sb.AppendLine($"public static bool IsDefined({layer.LayerName} value) => value switch");
+            sb.OpenBracket();
+            foreach (var item in arr)
+                sb.AppendLine($"{layer.LayerName}.{item} => true,");
+            sb.AppendLine($"_ => false,");
+            sb.CloseBracketC();
+            sb.AppendLine();
         }
+
+        /*
+        const string CollisionObject = GodotUtil.GD_G_NAMESPACE + ".CollisionObject";
+        const string CollisionObject2D = CollisionObject + "2D";
+        const string CollisionObject3D = CollisionObject + "3D";
+        Action closeMethod;
+        sb.AppendLineC($"public void GetCollisionLayer(this {CollisionObject3D} col, )");
+        closeMethod = sb.CreateBracketDeclaration($"public void SetCollisionLayer(this {CollisionObject3D} col)");
+        closeMethod();
+        */
 
         closeClass();
 
