@@ -1,11 +1,47 @@
-﻿using Generator.Attributes;
+﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Generator.Attributes;
 
 namespace Generator.Generators;
 
-internal partial class GodotNodeResourcePathGenerator
+[Generator]
+internal class GodotShaderNodeGenerator : IIncrementalGenerator
 {
+    public record class SemanticProvider(ClassDeclarationSyntax Syntax, INamedTypeSymbol Symbol);
+    public record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Classes, string TargetPath);
 
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var fullyQualifiedAttr = typeof(ShaderNodeAttribute).FullName;
+
+        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
+
+        var projectPath = GeneratorUtil.GetCallingPath(ref context);
+
+        var provider = context.CompilationProvider.Combine(classes.Collect()).Combine(projectPath).Select(
+            (x, _) => new CustomProvider(x.Left.Left, x.Left.Right, x.Right)
+        );
+
+        context.RegisterSourceOutput(provider, ShaderNodeGenerator);
+    }
+
+    private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
+    {
+        return syntaxNode is ClassDeclarationSyntax { BaseList.Types.Count: > 0 } candidate
+            && candidate.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)
+            && !x.IsKind(SyntaxKind.AbstractKeyword)
+            && !x.IsKind(SyntaxKind.StaticKeyword)
+            && !x.IsKind(SyntaxKind.RecordKeyword));
+    }
+
+    private static SemanticProvider SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+    {
+        var candidate = (ClassDeclarationSyntax)context.TargetNode;
+        var symbol = context.SemanticModel.GetDeclaredSymbol(candidate, cancellationToken) ?? throw new Exception("Candidate is not a symbol");
+        return new(candidate, symbol);
+    }
     public static void ShaderNodeGenerator(SourceProductionContext context, CustomProvider provider)
     {
         const string GD_LOADER = GodotUtil.GD_G_NAMESPACE + ".ResourceLoader";
@@ -76,13 +112,13 @@ internal partial class GodotNodeResourcePathGenerator
             {
                 filePath = GodotUtil.PathToGodotPath(provider.TargetPath, classSyntax.SyntaxTree.FilePath);
 
-                if (arg_isVisualShader) 
-                { 
+                if (arg_isVisualShader)
+                {
                     filePath = Path.ChangeExtension(filePath, VisualShader_EXT);
                     scriptType = VisualShader_TYPE;
                 }
-                else 
-                { 
+                else
+                {
                     filePath = Path.ChangeExtension(filePath, GodotUtil.SHADER_EXT);
                     scriptType = Shader_TYPE;
                 }

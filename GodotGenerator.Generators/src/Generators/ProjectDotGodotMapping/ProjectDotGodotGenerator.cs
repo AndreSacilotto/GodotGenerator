@@ -24,7 +24,7 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, string provider)
     {
-        var fileContent = provider.Split(GeneratorUtil.NewLines, StringSplitOptions.RemoveEmptyEntries).AsSpan();
+        var fileContent = provider.Split(StringUtil.NewLines, StringSplitOptions.RemoveEmptyEntries).AsSpan();
         if (fileContent == null || fileContent.Length == 0)
             return;
 
@@ -42,13 +42,13 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
                 var section = line.Slice(1, line.Length - 2);
                 if (section.SequenceEqual(input))
                 {
-                    var length = LoopUntilEndOfSection(ref fileContent, i);
+                    var length = LoopUntilEndOfSection(fileContent, i);
                     customInput = fileContent.Slice(i + 1, length);
                     i += length;
                 }
                 else if (section.SequenceEqual(layer_names))
                 {
-                    var length = LoopUntilEndOfSection(ref fileContent, i);
+                    var length = LoopUntilEndOfSection(fileContent, i);
                     customLayer = fileContent.Slice(i + 1, length);
                     i += length;
                 }
@@ -62,7 +62,7 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
 
         static bool IsSection(ReadOnlySpan<char> line) => line[0] == '[' && line[line.Length - 1] == ']';
 
-        static int LoopUntilEndOfSection(ref Span<string> content, int i)
+        static int LoopUntilEndOfSection(Span<string> content, int i)
         {
             int length = 0;
             for (i++; i < content.Length; i++)

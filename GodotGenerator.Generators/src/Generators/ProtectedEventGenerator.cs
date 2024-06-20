@@ -13,7 +13,9 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var fields = context.SyntaxProvider.CreateSyntaxProvider(SyntacticPredicate, SemanticTransform);
+        var fullyQualifiedAttr = typeof(Attributes.ProtectedEventAttribute).FullName;
+
+        var fields = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
 
         var provider = context.CompilationProvider.Combine(fields.Collect()).Select((x, _) => new CustomProvider(x.Left, x.Right));
 
@@ -22,21 +24,12 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
 
     private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
     {
-        //if (syntaxNode is not ClassDeclarationSyntax { Members.Count: > 0 } classSyntax)
-        //    return false;
-        //var fields = classSyntax.Members.Where(
-        //    member => member.IsKind(SyntaxKind.FieldDeclaration) &&
-        //    member.Modifiers.Any(x => x.IsKind(SyntaxKind.ProtectedKeyword))
-        //);
-        //return fields.Count() > 0;
-
-        return syntaxNode is FieldDeclarationSyntax { AttributeLists.Count: > 0, Declaration.Variables.Count: 1 } candidate
-            && candidate.Modifiers.Any(x => x.IsKind(SyntaxKind.ProtectedKeyword));
+        return syntaxNode is FieldDeclarationSyntax { Declaration.Variables.Count: 1 } candidate && candidate.Modifiers.Any(x => x.IsKind(SyntaxKind.ProtectedKeyword));
     }
 
-    private static SemanticProvider SemanticTransform(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+    private static SemanticProvider SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
     {
-        var candidate = (FieldDeclarationSyntax)context.Node;
+        var candidate = (FieldDeclarationSyntax)context.TargetNode;
 
         var variableDSyntax = candidate.Declaration.Variables.FirstOrDefault() ?? throw new Exception("Candidate has no variables");
         var symbol = context.SemanticModel.GetDeclaredSymbol(variableDSyntax, cancellationToken) ?? throw new Exception("Candidate is not a symbol");

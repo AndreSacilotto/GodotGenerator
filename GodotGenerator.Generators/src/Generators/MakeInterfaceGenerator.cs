@@ -1,9 +1,9 @@
-﻿using Generator.Attributes;
+﻿using System.Text;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Immutable;
-using System.Text;
+using Generator.Attributes;
 
 namespace Generator.Generators;
 
@@ -15,7 +15,9 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var classes = context.SyntaxProvider.CreateSyntaxProvider(SyntacticPredicate, SemanticTransform);
+        var fullyQualifiedAttr = typeof(MakeInterfaceAttribute).FullName;
+
+        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
 
         var provider = context.CompilationProvider.Combine(classes.Collect()).Select((x, _) => new CustomProvider(x.Left, x.Right));
 
@@ -24,13 +26,12 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
 
     private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
     {
-        return syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0 } candidate
-            && !candidate.Modifiers.Any(SyntaxKind.StaticKeyword);
+        return syntaxNode is ClassDeclarationSyntax candidate && !candidate.Modifiers.Any(SyntaxKind.StaticKeyword);
     }
 
-    private static SemanticProvider SemanticTransform(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+    private static SemanticProvider SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
     {
-        var candidate = (ClassDeclarationSyntax)context.Node;
+        var candidate = (ClassDeclarationSyntax)context.TargetNode;
         var symbol = context.SemanticModel.GetDeclaredSymbol(candidate, cancellationToken) ?? throw new Exception("Candidate is not a symbol");
         return new(candidate, symbol);
     }

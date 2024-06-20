@@ -6,7 +6,6 @@ namespace Generator;
 
 internal static class GeneratorExtension
 {
-    public static readonly string[] NewLines = new string[3] { "\r\n", "\r", "\n" };
 
     #region GetSymbolByName
 

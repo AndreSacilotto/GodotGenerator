@@ -2,6 +2,8 @@
 
 internal static class StringUtil
 {
+    public static readonly string[] NewLines = new string[3] { "\r\n", "\r", "\n" };
+
     public static string ReplaceLastOccurrence(string source, string find, string replace)
     {
         int place = source.LastIndexOf(find);

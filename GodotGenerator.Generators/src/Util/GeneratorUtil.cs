@@ -6,8 +6,6 @@ namespace Generator;
 
 internal static class GeneratorUtil
 {
-    public static readonly string[] NewLines = new string[3] { "\r\n", "\r", "\n" };
-
     //BaseNamespaceDeclarationSyntax on .Net6 (because you can use higher lib version)
     public static string GetNamespaceFrom(SyntaxNode syntax) => syntax.Parent switch
     {
