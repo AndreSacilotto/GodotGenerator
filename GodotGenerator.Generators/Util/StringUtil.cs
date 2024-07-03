@@ -34,7 +34,7 @@ internal static class StringUtil
         return last;
     }
 
-    public static string SnakeToPascal(string snake) 
+    public static string SnakeToPascal(string snake)
     {
         var strings = snake.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries).Select(FirstCharToUpperCase);
         return string.Join(string.Empty, strings);

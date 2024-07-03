@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Generator.Attributes;
+﻿namespace Generator.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public sealed class MakeInterfaceAttribute : Attribute
@@ -23,5 +21,4 @@ public sealed class MakeInterfaceAttribute : Attribute
         this.inheritInterfaces = inheritInterfaces;
         this.inheritGeneratedInterfaces = inheritGeneratedInterfaces;
     }
-
 }

@@ -35,7 +35,7 @@ partial class ProjectDotGodotGenerator
         // Default Inputs
         sb.AppendLine();
         sb.AppendLine("#region Default Inputs");
-        foreach (var input in defaultInputs) 
+        foreach (var input in defaultInputs)
         {
             //var varName = StringUtil.SnakeToPascal(input.Replace('.', '_'));
             var varName = input.Replace('.', '_').ToUpperInvariant();

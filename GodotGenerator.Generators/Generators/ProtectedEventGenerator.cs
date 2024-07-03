@@ -9,15 +9,17 @@ namespace Generator.Generators;
 internal class ProtectedEventGenerator : IIncrementalGenerator
 {
     private record class SemanticProvider(FieldDeclarationSyntax Syntax, IFieldSymbol Symbol);
-    private record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Fields);
+    private record class CustomProvider(ISymbol AttrSymbol, ImmutableArray<SemanticProvider> Fields);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var fullyQualifiedAttr = typeof(Attributes.ProtectedEventAttribute).FullName;
 
+        var markerAttrSymbol = context.CompilationProvider.Select((comp, _) => comp.GetSymbolByName(fullyQualifiedAttr));//"Generator.Attributes.ProtectedEventAttribute");
+
         var fields = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
 
-        var provider = context.CompilationProvider.Combine(fields.Collect()).Select((x, _) => new CustomProvider(x.Left, x.Right));
+        var provider = markerAttrSymbol.Combine(fields.Collect()).Select((x, _) => new CustomProvider(x.Left, x.Right));
 
         context.RegisterSourceOutput(provider, Execute);
     }
@@ -39,7 +41,6 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, CustomProvider provider)
     {
-        var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(Attributes.ProtectedEventAttribute).FullName);//"Generator.Attributes.ProtectedEventAttribute");
 
         var sb = new StringBuilderSG();
         foreach (var fieldItem in provider.Fields)
@@ -52,7 +53,7 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
             string arg_eventName = "";
             foreach (var attr in fieldSymbol.GetAttributes())
             {
-                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, markerAttrSymbol))
+                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, provider.AttrSymbol))
                     continue;
 
                 foreach (var ctorArg in attr.ConstructorArguments)

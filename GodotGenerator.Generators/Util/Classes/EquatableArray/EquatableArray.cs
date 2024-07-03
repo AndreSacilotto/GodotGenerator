@@ -7,8 +7,7 @@ namespace Generator;
 /// An immutable, equatable array. This is equivalent to <see cref="Array{T}"/> but with value equality support.
 /// </summary>
 /// <typeparam name="T">The type of values in the array.</typeparam>
-internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnumerable<T>
-    where T : IEquatable<T>
+internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnumerable<T> where T : IEquatable<T>
 {
     public static readonly EquatableArray<T> Empty = new(Array.Empty<T>());
 
@@ -71,8 +70,8 @@ internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnu
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         return ((IEnumerable<T>)(_array ?? Array.Empty<T>())).GetEnumerator();
-    }    
-    
+    }
+
     /// <sinheritdoc/>
     IEnumerator IEnumerable.GetEnumerator()
     {

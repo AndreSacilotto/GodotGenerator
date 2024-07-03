@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Generator.Attributes;
+﻿namespace Generator.Attributes;
 
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
 public sealed class ProtectedEventAttribute : Attribute

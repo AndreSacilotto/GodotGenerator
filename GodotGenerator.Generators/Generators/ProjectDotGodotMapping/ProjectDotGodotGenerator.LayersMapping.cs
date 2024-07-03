@@ -52,7 +52,7 @@ partial class ProjectDotGodotGenerator
             start = i1 + 1 + 6;
             var numberString = line.Slice(start, i2 - start).ToString();
 
-            arr.LayersName[int.Parse(numberString)-1] = nameString;
+            arr.LayersName[int.Parse(numberString) - 1] = nameString;
         }
 
         foreach (var layer in layersDict.Values)
@@ -65,7 +65,7 @@ partial class ProjectDotGodotGenerator
             for (int i = 0; i < arr.Length; i++)
             {
                 if (string.IsNullOrEmpty(arr[i]))
-                    arr[i] = "Layer" + (i+1);
+                    arr[i] = "Layer" + (i + 1);
                 sb.AppendLine($"{arr[i]} = 1 << {i},");
             }
             closeEnum();

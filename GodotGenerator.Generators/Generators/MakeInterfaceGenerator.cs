@@ -1,9 +1,9 @@
-﻿using System.Text;
-using System.Collections.Immutable;
+﻿using Generator.Attributes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Generator.Attributes;
+using System.Collections.Immutable;
+using System.Text;
 
 namespace Generator.Generators;
 
@@ -11,17 +11,27 @@ namespace Generator.Generators;
 internal class MakeInterfaceGenerator : IIncrementalGenerator
 {
     private record class SemanticProvider(ClassDeclarationSyntax Syntax, INamedTypeSymbol Symbol);
-    private record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Classes);
+    private record class SemanticItem(SemanticProvider Provider, SemanticModel Model);
+    private record class CustomProvider(ISymbol AttrSymbol, ImmutableArray<SemanticItem> Classes);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var fullyQualifiedAttr = typeof(MakeInterfaceAttribute).FullName;
 
-        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
+        var markerAttrSymbol = context.CompilationProvider.Select((comp, _) => comp.GetSymbolByName(fullyQualifiedAttr)); //"Generator.Attributes.MakeInterfaceAttribute"
 
-        var provider = context.CompilationProvider.Combine(classes.Collect()).Select((x, _) => new CustomProvider(x.Left, x.Right));
+        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform).Collect();
 
-        context.RegisterSourceOutput(provider, Execute);
+        var provider = context.CompilationProvider.Combine(classes).Select((x, _) =>
+        {
+            var len = x.Right.Length;
+            var arr = new SemanticItem[len];
+            for (int i = 0; i < len; i++)
+                arr[i] = new SemanticItem(x.Right[i], x.Left.GetSemanticModel(x.Right[i].Syntax.SyntaxTree));
+            return arr.ToImmutableArray();
+        }).Combine(markerAttrSymbol).Select((x, _) => new CustomProvider(x.Right, x.Left));
+
+        context.RegisterSourceOutput(provider, Generate);
     }
 
     private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
@@ -36,34 +46,21 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
         return new(candidate, symbol);
     }
 
-    private class ValidItem
+    private record class ValidItem(SemanticItem Semantic, AttributeData Attribute, string IName);
+
+    private static void Generate(SourceProductionContext context, CustomProvider provider)
     {
-        public ValidItem(SemanticProvider provider, AttributeData attribute, string interfaceName)
-        {
-            Provider = provider;
-            Attribute = attribute;
-            IName = interfaceName;
-        }
-        public SemanticProvider Provider { get; }
-        public AttributeData Attribute { get; }
-        public string IName { get; }
-
-    }
-
-    private static void Execute(SourceProductionContext context, CustomProvider provider)
-    {
-        var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(MakeInterfaceAttribute).FullName);//"Generator.Attributes.MakeInterfaceAttribute");
-
         // Get only the classes with the attribute code
         var valid = new HashSet<ValidItem>();
-        foreach (var classItem in provider.Classes)
+        foreach (var item in provider.Classes)
         {
+            var classItem = item.Provider;
             foreach (var attr in classItem.Symbol.GetAttributes())
             {
-                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, markerAttrSymbol) || attr.AttributeConstructor == null)
+                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, provider.AttrSymbol) || attr.AttributeConstructor == null)
                     continue;
                 var interfaceName = StringUtil.ReplaceLastOccurrence(classItem.Symbol.ToGlobalName(), ".", ".I");
-                valid.Add(new(classItem, attr, interfaceName));
+                valid.Add(new(item, attr, interfaceName));
             }
         }
 
@@ -71,8 +68,9 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
         var interfaces = new List<string>();
         foreach (var item in valid)
         {
-            var classSyntax = item.Provider.Syntax;
-            var classSymbol = item.Provider.Symbol;
+            var classSyntax = item.Semantic.Provider.Syntax;
+            var classSymbol = item.Semantic.Provider.Symbol;
+            var model = item.Semantic.Model;
             var attr = item.Attribute;
 
             // Get Attribute Informations
@@ -91,7 +89,8 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
 
                 switch (param.Name)
                 {
-                    case nameof(MakeInterfaceAttribute.useProps): useProps = (bool)value; break;
+                    case nameof(MakeInterfaceAttribute.useProps): 
+                    useProps = (bool)value; break;
                     case nameof(MakeInterfaceAttribute.useMethods): useMethods = (bool)value; break;
                     case nameof(MakeInterfaceAttribute.useEvents): useEvents = (bool)value; break;
                     case nameof(MakeInterfaceAttribute.inheritInterfaces): inheritInterfaces = (bool)value; break;
@@ -120,7 +119,7 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
             if (inheritGeneratedInterfaces)
             {
                 foreach (var item2 in valid)
-                    if (item != item2 && classSymbol.IsOfBaseType(item2.Provider.Symbol))
+                    if (item != item2 && classSymbol.IsOfBaseType(item2.Semantic.Provider.Symbol))
                         interfaces.Add(item2.IName);
             }
             if (inheritInterfaces)
@@ -132,7 +131,6 @@ internal class MakeInterfaceGenerator : IIncrementalGenerator
 
             var closeType = sb.CreateBracketDeclaration(interfaceDeclaration);
 
-            var model = provider.Compilation.GetSemanticModel(classSyntax.SyntaxTree);
             var acessorText = new StringBuilder();
 
             foreach (var member in classSyntax.Members)

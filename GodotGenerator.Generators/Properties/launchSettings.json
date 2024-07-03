@@ -2,7 +2,7 @@
   "profiles": {
     "Debug_SG": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "..\\..\\..\\Star_Kitchen\\Star_Kitchen.csproj"
+      "targetProject": "..\\..\\..\\SourceGenDebug\\SourceGenDebug.csproj"
     }
   }
 }

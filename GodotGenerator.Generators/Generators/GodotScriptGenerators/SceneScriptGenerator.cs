@@ -1,64 +1,65 @@
-﻿using System.Collections.Immutable;
+﻿using Generator.Attributes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Generator.Attributes;
+using System.Collections.Immutable;
 
 namespace Generator.Generators;
 
 [Generator]
-internal class GodotScriptSceneGenerator : IIncrementalGenerator
+internal class SceneScriptGenerator : IIncrementalGenerator
 {
+    public record class SymbolsProvider(INamedTypeSymbol AttrSymbol, INamedTypeSymbol NodeSymbol, INamedTypeSymbol ResourceSymbol);
     public record class SemanticProvider(ClassDeclarationSyntax Syntax, INamedTypeSymbol Symbol);
-    public record class CustomProvider(Compilation Compilation, ImmutableArray<SemanticProvider> Classes, string TargetPath);
+    public record class CustomProvider(ImmutableArray<SemanticProvider> Classes, SymbolsProvider Symbols, string TargetPath);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var fullyQualifiedAttr = typeof(ScriptSceneAttribute).FullName;
-
-        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, SyntacticPredicate, SemanticTransform);
+        // Data
+        var fullyQualifiedAttr = typeof(SceneScriptAttribute).FullName;
 
         var projectPath = GeneratorUtil.GetCallingPath(ref context);
 
-        var provider = context.CompilationProvider.Combine(classes.Collect()).Combine(projectPath).Select(
-            (x, _) => new CustomProvider(x.Left.Left, x.Left.Right, x.Right)
-        );
+        var classes = context.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedAttr, Predicate, Transform).Collect();
 
-        context.RegisterSourceOutput(provider, ScriptSceneGenerator);
+        static bool Predicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
+        {
+            return syntaxNode is ClassDeclarationSyntax { BaseList.Types.Count: > 0 } candidate
+                && candidate.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)
+                && !x.IsKind(SyntaxKind.AbstractKeyword)
+                && !x.IsKind(SyntaxKind.StaticKeyword)
+                && !x.IsKind(SyntaxKind.RecordKeyword));
+        }
+        static SemanticProvider Transform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+        {
+            var candidate = (ClassDeclarationSyntax)context.TargetNode;
+            var symbol = context.SemanticModel.GetDeclaredSymbol(candidate, cancellationToken) ?? throw new Exception("Candidate is not a symbol");
+            return new(candidate, symbol);
+        }
+
+        var symbols = context.CompilationProvider.Select((comp, _) =>
+        {
+            var markerAttrSymbol = comp.GetSymbolByName(fullyQualifiedAttr);
+            var nodeSymbol = comp.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Node");
+            var resourceSymbol = comp.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Resource");
+            return new SymbolsProvider(markerAttrSymbol, nodeSymbol, resourceSymbol);
+        });
+
+        var provider = projectPath.Combine(classes).Combine(symbols).Select((x, _) => new CustomProvider(x.Left.Right, x.Right, x.Left.Left));
+
+        // Output
+        context.RegisterSourceOutput(provider, Generate);
     }
 
-    private static bool SyntacticPredicate(SyntaxNode syntaxNode, CancellationToken cancellationToken)
+    public static void Generate(SourceProductionContext context, CustomProvider provider)
     {
-        return syntaxNode is ClassDeclarationSyntax { BaseList.Types.Count: > 0 } candidate
-            && candidate.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword)
-            && !x.IsKind(SyntaxKind.AbstractKeyword)
-            && !x.IsKind(SyntaxKind.StaticKeyword)
-            && !x.IsKind(SyntaxKind.RecordKeyword));
-    }
-
-    private static SemanticProvider SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
-    {
-        var candidate = (ClassDeclarationSyntax)context.TargetNode;
-        var symbol = context.SemanticModel.GetDeclaredSymbol(candidate, cancellationToken) ?? throw new Exception("Candidate is not a symbol");
-        return new(candidate, symbol);
-    }
-
-    public static void ScriptSceneGenerator(SourceProductionContext context, CustomProvider provider)
-    {
-        const string GD_PACKED = GodotUtil.GD_G_NAMESPACE + ".PackedScene";
-        const string GD_LOADER = GodotUtil.GD_G_NAMESPACE + ".ResourceLoader";
-
-        var markerAttrSymbol = provider.Compilation.GetSymbolByName(typeof(ScriptSceneAttribute).FullName);//"Generator.Attributes.ScriptSceneAttribute");
-        var nodeSymbol = provider.Compilation.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Node");
-        var resourceSymbol = provider.Compilation.GetSymbolByName(GodotUtil.GD_NAMESPACE + ".Resource");
-
         var sb = new StringBuilderSG();
         foreach (var classItem in provider.Classes)
         {
             var classSyntax = classItem.Syntax;
             var classSymbol = classItem.Symbol;
 
-            AttributeData? attrData = GeneratorUtil.GetAttributeDataIfExist(classSymbol, markerAttrSymbol);
+            AttributeData? attrData = GeneratorUtil.GetAttributeDataIfExist(classSymbol, provider.Symbols.AttrSymbol);
             if (attrData is null)
                 continue;
 
@@ -72,8 +73,8 @@ internal class GodotScriptSceneGenerator : IIncrementalGenerator
                     arg_scenePath = stringValue;
             }
 
-            bool isNode = classSymbol.IsOfBaseType(nodeSymbol);
-            bool isResource = classSymbol.IsOfBaseType(resourceSymbol);
+            bool isNode = classSymbol.IsOfBaseType(provider.Symbols.NodeSymbol);
+            bool isResource = classSymbol.IsOfBaseType(provider.Symbols.ResourceSymbol);
 
             if (!isNode && !isResource)
             {
@@ -100,6 +101,8 @@ internal class GodotScriptSceneGenerator : IIncrementalGenerator
                     filePath = Path.ChangeExtension(filePath, GodotUtil.RESOURCE_EXT);
             }
 
+            const string GD_PACKED = GodotUtil.GD_G_NAMESPACE + ".PackedScene";
+            const string GD_LOADER = GodotUtil.GD_G_NAMESPACE + ".ResourceLoader";
             if (isNode)
             {
                 if (arg_chachePackedScene)
@@ -124,7 +127,7 @@ internal class GodotScriptSceneGenerator : IIncrementalGenerator
             closeClass();
 
             //OutputWriter.WriteFileOnProject(sb.ToString(), "Tests\\" + className + ".txt");
-            context.AddSource($"{className}.{nameof(ScriptSceneGenerator)}.g.cs", sb.ToString());
+            context.AddSource($"{className}.{nameof(SceneScriptGenerator)}.g.cs", sb.ToString());
             sb.Clear();
         }
     }

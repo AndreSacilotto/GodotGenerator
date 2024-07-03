@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generator;
@@ -29,7 +28,7 @@ internal static class GeneratorUtil
     });
     #endregion
 
-    public static AttributeData? GetAttributeDataIfExist(INamedTypeSymbol typeSymbol, INamedTypeSymbol attributeSymbol)
+    public static AttributeData? GetAttributeDataIfExist(ISymbol typeSymbol, ISymbol attributeSymbol)
     {
         foreach (var attr in typeSymbol.GetAttributes())
         {
