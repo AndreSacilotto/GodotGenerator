@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Generator.Generators;
 
@@ -15,7 +16,7 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
         );
 
         var projectFiles = additionalTexts.Select(
-            static (additionalText, cancellationToken) => additionalText.GetText(cancellationToken)!.ToString()
+            static (additionalText, cancellationToken) => additionalText.GetText(cancellationToken)?.ToString() ?? string.Empty
         );
 
         context.RegisterSourceOutput(projectFiles, Execute);
@@ -25,11 +26,13 @@ internal partial class ProjectDotGodotGenerator : IIncrementalGenerator
     private static void Execute(SourceProductionContext context, string provider)
     {
         var fileContent = provider.Split(StringUtil.NewLines, StringSplitOptions.RemoveEmptyEntries).AsSpan();
-        if (fileContent == null || fileContent.Length == 0)
+        if (fileContent.Length == 0)
             return;
 
         var input = "input".AsSpan();
         var layer_names = "layer_names".AsSpan();
+
+        ImmutableArray.CreateBuilder<string>();
 
         var customInput = ReadOnlySpan<string>.Empty;
         var customLayer = ReadOnlySpan<string>.Empty;

@@ -40,16 +40,19 @@ internal sealed class WhatNotificationGenerator : IIncrementalGenerator
 
             var attrData = context.Attributes.Single(x => SymbolEqualityComparer.Default.Equals(x.AttributeClass, attrSymbol));
 
+            string arg_methodName = "";
             int arg_baseCall = 0;
             foreach (var ctorArg in attrData.ConstructorArguments)
             {
+                if (ctorArg.Value is string stringValue)
+                    arg_methodName = stringValue;
                 if (ctorArg.Value is int intValue)
                     arg_baseCall = intValue;
             }
 
             var attrSymbolItem = compilation.GetSymbolByName(fullyQualifiedAttrItem);
 
-            var valid = new List<AttributeItem>();
+            var valid = new List<MethodAttributeItem>();
             foreach (var item in classSyntax.Members)
             {
                 if (item is MethodDeclarationSyntax { AttributeLists.Count: > 0 } methodSyntax)
@@ -71,15 +74,16 @@ internal sealed class WhatNotificationGenerator : IIncrementalGenerator
                 }
             }
 
-            return new GenerationItem(className, ns, arg_baseCall, new(valid.ToArray()));
+            return new GenerationItem(className, ns, new(arg_methodName, arg_baseCall), new(valid.ToArray()));
         }
 
         // Output
         context.RegisterSourceOutput(provider, Generate);
     }
 
-    private record struct AttributeItem(string MethodName, int What);
-    private record class GenerationItem(string ClassName, string ClassNamespace, int ArgBaseCall, EquatableArray<AttributeItem> Attributes);
+    private record struct AttributeItem(string MethodName, int BaseCall);
+    private record struct MethodAttributeItem(string MethodName, int What);
+    private record class GenerationItem(string ClassName, string ClassNamespace, AttributeItem Arg, EquatableArray<MethodAttributeItem> Attributes);
 
     private static void Generate(SourceProductionContext context, ImmutableArray<GenerationItem> items)
     {
@@ -92,11 +96,11 @@ internal sealed class WhatNotificationGenerator : IIncrementalGenerator
             sb.AppendLine($"partial class {item.ClassName}");
             sb.OpenBracket();
 
-            sb.AppendLine("public override void _Notification(int what)");
+            sb.AppendLine($"{item.Arg.MethodName}(int what)");
             sb.OpenBracket();
 
             const string BaseCall = "base._Notification(what)";
-            if (item.ArgBaseCall < 0)
+            if (item.Arg.BaseCall < 0)
                 sb.AppendLineC(BaseCall);
 
             var closeSwitch = sb.CreateBracketDeclaration("switch (what)");
@@ -106,7 +110,7 @@ internal sealed class WhatNotificationGenerator : IIncrementalGenerator
 
             sb.CloseBracket();
 
-            if (item.ArgBaseCall > 0)
+            if (item.Arg.BaseCall > 0)
                 sb.AppendLineC(BaseCall);
 
             sb.CloseBracket();

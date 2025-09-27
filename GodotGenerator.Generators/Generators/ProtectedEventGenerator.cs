@@ -41,7 +41,6 @@ internal class ProtectedEventGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, CustomProvider provider)
     {
-
         var sb = new StringBuilderSG();
         foreach (var fieldItem in provider.Fields)
         {

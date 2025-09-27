@@ -1,0 +1,21 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="SourceGenDebug"
+config/tags=PackedStringArray("lib")
+run/main_scene="res://src/Mynode.tscn"
+config/features=PackedStringArray("4.5", "C#", "Forward Plus")
+config/icon="res://favicon.png"
+
+[dotnet]
+
+project/assembly_name="SourceGenDebug"

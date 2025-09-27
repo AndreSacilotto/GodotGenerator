@@ -10,14 +10,12 @@ public sealed class WhatNotificationAttribute : Attribute
         After = 1,
     }
 
+    public readonly string method;
     public readonly int baseCall;
-    public WhatNotificationAttribute(BaseCall baseCall = BaseCall.NoCall)
+    public WhatNotificationAttribute(string method = "private void CustomNotification", BaseCall baseCall = BaseCall.NoCall)
     {
+        this.method = method;
         this.baseCall = (int)baseCall;
-    }
-    public WhatNotificationAttribute(int baseCall = 0)
-    {
-        this.baseCall = baseCall;
     }
 }
 
@@ -25,6 +23,10 @@ public sealed class WhatNotificationAttribute : Attribute
 public sealed class WhatNotificationMethodAttribute : Attribute
 {
     public readonly int what;
+    public WhatNotificationMethodAttribute(long what)
+    {
+        this.what = (int)what;
+    }
     public WhatNotificationMethodAttribute(int what)
     {
         this.what = what;

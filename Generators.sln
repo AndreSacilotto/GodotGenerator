@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Generators", "GodotGenerato
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Attributes", "GodotGenerator.Attributes\Attributes.csproj", "{E8C3A6BD-DA9E-4DB3-BE52-BD87938BE5DC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGenDebug", "..\..\SourceGenDebug\SourceGenDebug.csproj", "{09FDD6F6-4505-4776-B33B-5722385CC9AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGenDebug", "GodotGenerator.Debug\SourceGenDebug.csproj", "{09FDD6F6-4505-4776-B33B-5722385CC9AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
